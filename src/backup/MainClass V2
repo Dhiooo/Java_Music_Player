@@ -1,0 +1,278 @@
+package GUI;
+
+import CustomComponent.*;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.geom.RoundRectangle2D;
+
+class MainGUIPanel extends JPanel {
+    private final int PANEL_ARCH = 20;
+    private final int SLIDER_ARCH = 10;
+
+    private Point initialClick;
+    private JFrame parent;
+    private JPanel draggablePanel;
+    private boolean isDraggable = false;
+    // Song Variable
+    private int currValue = 0;
+    private int maxValue = 100;
+
+    GroupLayout groupLay = new GroupLayout(this);
+
+    public MainGUIPanel(JFrame parent) {
+        this.parent = parent;
+
+        setLayout(groupLay);
+        setOpaque(false);
+
+        // CompPanel
+        RoundedPanel compPanel = new RoundedPanel(PANEL_ARCH);
+        compPanel.setLayout(new BoxLayout(compPanel, BoxLayout.Y_AXIS));
+        compPanel.setBackground(new Color(0, 28, 48));
+
+
+        // Draggable Panel
+        draggablePanel = new JPanel();
+        draggablePanel.setLayout(new BoxLayout(draggablePanel, BoxLayout.X_AXIS));
+        draggablePanel.setMaximumSize(new Dimension(1000, 45));
+        draggablePanel.setBackground(new Color(0, 28, 48));
+        // Hide Button
+        NormalButton hideButton = new NormalButton(
+                "—",
+                new Color(0,0,0,0),
+                new Color(0, 55, 97),
+                new Color(0, 43, 76)
+        );
+        hideButton.setBorder(BorderFactory.createMatteBorder(0,0,0,0,Color.WHITE));
+        hideButton.setMaximumSize(new Dimension(50,45));
+        hideButton.setFont(setCustomFont(10));
+        hideButton.addActionListener(e -> {
+            hideAllComponent(this);
+            parent.setExtendedState(JFrame.ICONIFIED);
+        });
+        // Exit Button
+        NormalButton exitButton = new NormalButton(
+                "X",
+                new Color(0,0,0,0),
+                new Color(179, 23, 23),
+                new Color(113, 11, 11)
+        );
+        exitButton.setBorder(BorderFactory.createMatteBorder(0,0,0,0,Color.WHITE));
+        exitButton.setMaximumSize(new Dimension(50,45));
+        exitButton.setFont(setCustomFont(15));
+        exitButton.addActionListener(e -> {
+            System.exit(0);
+        });
+
+
+        // Background Panel
+        HalfRoundedPanel bgPanel = new HalfRoundedPanel(PANEL_ARCH);
+        bgPanel.setMaximumSize(new Dimension(1000,900));
+        bgPanel.setBackground(new Color(0, 28, 48));
+
+
+        // Tab Panel
+        JPanel tabPanel = new JPanel();
+        tabPanel.setLayout(null);
+        tabPanel.setMaximumSize(new Dimension(200,1000));
+        tabPanel.setBackground(new Color(28, 28, 28));
+
+
+        // buttonComp Panel
+        JPanel buttonCompPanel = new JPanel();
+        buttonCompPanel.setLayout(null);
+        buttonCompPanel.setMaximumSize(new Dimension(1000,250));
+        buttonCompPanel.setBackground(new Color(38, 38, 38));
+        // Song PlayTime JLabel
+        JLabel songTimeStamp = new JLabel("0:00:00");
+        songTimeStamp.setFont(setCustomFont(12));
+        songTimeStamp.setForeground(Color.WHITE);
+        songTimeStamp.setBounds(15, 19, 90, 20);
+        // Song PlayTime JSlider
+        CustomJSlider songSlider = new CustomJSlider(SLIDER_ARCH, 0, maxValue, currValue);
+        songSlider.setBounds(75, 10, 350, 35); // width and height will get overwrite
+        songSlider.setBackground(new Color(112, 112, 112));
+        songSlider.addChangeListener(e -> {
+            if(!songSlider.getValueIsAdjusting()) {
+                songSlider.setForeground(new Color(89,89,89));
+            } else {
+                songSlider.setForeground(new Color(0, 125, 202));
+            }
+        });
+        // Song End JLabel
+        JLabel songEnd = new JLabel("0:00:00");
+        songEnd.setFont(setCustomFont(12));
+        songEnd.setForeground(Color.WHITE);
+        songEnd.setBounds(435, 19, 90, 20);
+        // Previous button
+        OvalButton prevButton = new OvalButton(
+            "src/resources/assets/Prev Button.png",
+            new Dimension(35,35),
+            ""
+        );
+        prevButton.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
+        prevButton.setMaximumSize(new Dimension(35,70));
+        prevButton.setBounds(185,50,35,70);
+        // Play/Stop button
+        OvalButton playButton = new OvalButton(
+            "src/resources/assets/Play Button.png",
+            new Dimension(60,60),
+            "src/resources/assets/Pause Button.png"
+        ); // D:/Coding Stuff/Java Intellij Project/Music Player/
+        playButton.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
+        playButton.setMaximumSize(new Dimension(60,120));
+        playButton.setBounds(220,38,60,120);
+        // Next Button
+        OvalButton nextButton = new OvalButton(
+            "src/resources/assets/Next Button.png",
+            new Dimension(35,35),
+            ""
+        );
+        nextButton.setBorder(BorderFactory.createEmptyBorder(0,0,0,0));
+        nextButton.setMaximumSize(new Dimension(35,70));
+        nextButton.setBounds(280,50,35,70);
+
+
+        // add Component to Draggable Panel (Sub-Panel)
+        draggablePanel.add(Box.createHorizontalStrut(400));
+        draggablePanel.add(hideButton);
+        draggablePanel.add(exitButton);
+        // add Component ButtonComp Panel (Sub-Panel)
+        buttonCompPanel.add(songTimeStamp);
+        buttonCompPanel.add(songSlider);
+        buttonCompPanel.add(songEnd);
+        buttonCompPanel.add(prevButton);
+        buttonCompPanel.add(playButton);
+        buttonCompPanel.add(nextButton);
+        // Add Component to CompPanel (Main-Panel)
+        compPanel.add(draggablePanel);
+        compPanel.add(bgPanel);
+        compPanel.add(buttonCompPanel);
+
+        // Main Panel Alignment
+        groupLay.setHorizontalGroup(
+                groupLay.createSequentialGroup()
+                        .addComponent(compPanel, GroupLayout.PREFERRED_SIZE, 500, GroupLayout.PREFERRED_SIZE)
+        );
+        groupLay.setVerticalGroup(
+                groupLay.createSequentialGroup()
+                        .addComponent(compPanel, GroupLayout.PREFERRED_SIZE, 500, GroupLayout.PREFERRED_SIZE)
+        );
+        this.add(compPanel);
+
+
+        // Draggable Property
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                // DEBUG
+                System.out.println(findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel));
+
+                Component clickedComp = findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel);
+                if(clickedComp != null && clickedComp.equals(draggablePanel)) {
+                    initialClick = e.getPoint();
+                }
+            }
+        });
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                Component clickedComp = findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel);
+                if(clickedComp != null && clickedComp.equals(draggablePanel)) {
+                    // get location of Window (Frame)
+                    int thisX = parent.getLocation().x;
+                    int thisY = parent.getLocation().y;
+
+                    // Determine how much the mouse moved since the initial click (Mouse)
+                    int xMoved = e.getX() - initialClick.x;
+                    int yMoved = e.getY() - initialClick.y;
+
+                    // Move window to this position
+                    int targetX = thisX + xMoved;
+                    int targetY = thisY + yMoved;
+                    parent.setLocation(targetX, targetY);
+                }
+            }
+        });
+
+        setVisible(true);
+    }
+
+    private Component findComponentAt(Component parent, Point point, Component targetComponent) {
+        if (parent instanceof Container) {
+            Container container = (Container) parent;
+            for (Component component : container.getComponents()) {
+                Point componentPoint = SwingUtilities.convertPoint(parent, point, component);
+                if (component.contains(componentPoint)) {
+                    Component foundComponent = findComponentAt(component, componentPoint, targetComponent);
+                    if (foundComponent != null) {
+                        return foundComponent.equals(targetComponent) ? foundComponent : targetComponent;
+                    }
+
+                    return component.equals(targetComponent) ? component : null;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void hideAllComponent(Container parent) {
+        for(Component comp : parent.getComponents()) {
+            setVisible(false);
+            if(comp instanceof Container) {
+                hideAllComponent((Container) comp);
+            }
+        }
+    }
+
+    // Setting a Custom Font
+    public Font setCustomFont(int size) {
+        return new Font("Consolas", Font.PLAIN, size);
+    }
+}
+
+class MainGUIFrame extends JFrame {
+    private final int FRAME_ARCH = 30;
+    MainGUIPanel guiPanel;
+
+    public MainGUIFrame() {
+        guiPanel = new MainGUIPanel(this);
+
+        setTitle("Music Player");
+        setSize(500,500);
+        setUndecorated(true);
+        setShape(new RoundRectangle2D.Double(0, 0, getWidth(), getHeight(), FRAME_ARCH, FRAME_ARCH));
+        setBackground(new Color(0, 0, 0, 0));
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+
+        add(guiPanel);
+
+        // Add WindowFocusListener to show components when the window gains focus
+        addWindowFocusListener(new WindowAdapter() {
+           @Override
+           public void windowGainedFocus(WindowEvent e) {
+               showAllComponent(guiPanel);
+           }
+        });
+
+        setVisible(true);
+    }
+
+    public void showAllComponent(Container parent) {
+        for(Component comp : parent.getComponents()) {
+            guiPanel.setVisible(true);
+            if(comp instanceof Container) {
+                showAllComponent((Container) comp);
+            }
+        }
+    }
+}
+
+public class MainClass {
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(MainGUIFrame::new);
+    }
+}
