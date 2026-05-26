@@ -1,6 +1,5 @@
 package function;
 
-import gui.MainGUIPanel;
 import com.mpatric.mp3agic.*;
 import javazoom.jl.decoder.JavaLayerException;
 import javazoom.jl.player.advanced.AdvancedPlayer;
@@ -25,8 +24,8 @@ public class MusicPlayerFunction {
 
   private final String DEFAULT_ALBUM_IMAGE = "src/resources/assets/Image/Default Album Image.jpg";
 
-  // GUI var
-  private MainGUIPanel mainPanel;
+  // Listener var
+  private AudioPlayerListener listener;
   private String songFileName = "";
 
   // Audio var
@@ -51,8 +50,8 @@ public class MusicPlayerFunction {
   // ========================================== <Constructor>
   // ==========================================
 
-  public MusicPlayerFunction(MainGUIPanel mainPanel) {
-    this.mainPanel = mainPanel;
+  public MusicPlayerFunction(AudioPlayerListener listener) {
+    this.listener = listener;
 
     songLogoImage = new ImageIcon(DEFAULT_ALBUM_IMAGE);
     songTitle = "Unknown";
@@ -71,22 +70,17 @@ public class MusicPlayerFunction {
         try {
           audioPlayer.play(audioPausedTime, Integer.MAX_VALUE);
         } catch (JavaLayerException e) {
-          JOptionPane.showMessageDialog(
-              mainPanel,
-              "There seems to be problem with the JLayer Function",
-              "JLayer Problem",
-              JOptionPane.WARNING_MESSAGE);
+          if (listener != null) {
+            listener.onError("There seems to be problem with the JLayer Function", "JLayer Problem");
+          }
         }
       });
       audioThread.start();
 
     } catch (FileNotFoundException | JavaLayerException e) {
-      JOptionPane.showMessageDialog(
-          mainPanel,
-          "Please Refer to the correct file",
-          "File Not Found",
-          JOptionPane.WARNING_MESSAGE);
-      ;
+      if (listener != null) {
+        listener.onError("Please Refer to the correct file", "File Not Found");
+      }
     }
 
     updateMp3file();
@@ -216,7 +210,9 @@ public class MusicPlayerFunction {
         tempAudioPaused += 1000;
 
         // Update the JSlider using Milisecond
-        mainPanel.updatePlayBackSlider(convertMilisToFrame(tempAudioPaused));
+        if (listener != null) {
+          listener.onPlaybackTimeUpdated(tempAudioPaused);
+        }
 
         System.out.println("Audio (in Second)               : " + (tempAudioPaused / 1000));
         System.out.println("Total Audio Length (in Second)  : " + (int) mp3file.getLengthInSeconds());
@@ -226,12 +222,13 @@ public class MusicPlayerFunction {
           stopAudio();
           playNextSong();
 
-          // Set SongSlider Max value and update End of the song Label
-          mainPanel.updateAudioTotalLength();
-
           // Update song metadata
           updateSongMetadata();
-          mainPanel.updateMetadataLabel();
+
+          // Notify UI that song changed
+          if (listener != null) {
+            listener.onSongChanged();
+          }
         }
       });
       audioTimeStamp.start();

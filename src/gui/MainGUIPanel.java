@@ -10,7 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 
-public class MainGUIPanel extends JPanel {
+public class MainGUIPanel extends JPanel implements function.AudioPlayerListener {
   // Arch of the Component var (final)
   private final int PANEL_ARCH = 20;
   private final int SLIDER_ARCH = 10;
@@ -27,7 +27,7 @@ public class MainGUIPanel extends JPanel {
 
   // Draggable Component var
   private Point initialClick;
-  private JFrame parent;
+
   private JPanel draggablePanel;
 
   // Song Slider Var
@@ -37,6 +37,7 @@ public class MainGUIPanel extends JPanel {
   private JLabel songTimeStamp;
   private JLabel songEnd;
   private String getAbsoluteSongPath = "";
+  private AudioFormatValidator audioValidator;
 
   // Song Metadata Var
   private JLabel albumImage;
@@ -78,8 +79,6 @@ public class MainGUIPanel extends JPanel {
         getAbsoluteSongPath = getDirectory.getAbsolutePath();
         audioPlayer.setSongFileName(getAbsoluteSongPath);
 
-        // System.out.println("Successfull to get the song directory ...");
-        // System.out.println("Song Path: " + audioPlayer.getSongFileName());
       } else {
         System.out.println("Failed to get the song directory ...");
       }
@@ -153,7 +152,7 @@ public class MainGUIPanel extends JPanel {
     hideButton.setFont(setCustomFont(10));
     hideButton.addActionListener(e -> {
       hideAllComponent(this);
-      parent.setExtendedState(JFrame.ICONIFIED);
+      ((JFrame)javax.swing.SwingUtilities.getWindowAncestor(this)).setExtendedState(JFrame.ICONIFIED);
     });
 
     // Exit Button
@@ -189,7 +188,6 @@ public class MainGUIPanel extends JPanel {
     bgPanel.setMaximumSize(new Dimension(300, 400)); // 300 width
     bgPanel.setPreferredSize(new Dimension(300, 100));
     bgPanel.setBackground(new Color(0, 28, 48));
-    // bgPanel.setBackground(new Color(70, 28, 48));
     bgPanel.setLayout(new FlowLayout());
 
     // Song album image (Metadata)
@@ -197,14 +195,11 @@ public class MainGUIPanel extends JPanel {
     albumImage = new JLabel() {
       @Override
       protected void paintComponent(Graphics g) {
-        // super.paintComponent(g); // Ensure the component gets painted properly
         ImageIcon image = audioPlayer.getSongLogoImage();
 
         if (image != null) {
           int newWidth = albumSize.width;
           int newHeight = albumSize.height;
-          // int newHeight = (int) (newWidth * ((double) image.getIconHeight() /
-          // image.getIconWidth()));
 
           if (newHeight > 265) {
             newHeight = this.getHeight();
@@ -219,8 +214,6 @@ public class MainGUIPanel extends JPanel {
     };
     albumImage.setMaximumSize(albumSize);
     albumImage.setPreferredSize(albumSize);
-    // albumImage.setBounds(((bgPanel.getWidth() - albumSize.width) / 2) +
-    // albumSize.width - 5, 20, 225, 225);
 
     // Song title (Metadata)
     Dimension songTitleDim = new Dimension(170, 20);
@@ -247,24 +240,21 @@ public class MainGUIPanel extends JPanel {
     upperPanel.setLayout(new FlowLayout(FlowLayout.LEADING, 0, 0));
     upperPanel.setMaximumSize(new Dimension(500, 379)); // height 620, v2 400
     upperPanel.setPreferredSize(new Dimension(500, 379));
-    // upperPanel.setBackground(new Color(0, 28, 48));
     upperPanel.add(tabPanel);
     upperPanel.add(upperPanelSub2);
 
     return upperPanel;
   }
 
-  private boolean isValidSongFolder() {
+   public boolean isValidSongFolder() {
     File songFolder = new File(getAbsoluteSongPath);
 
-    // System.out.println("songFolder.exists(): " + songFolder.exists());
-    // System.out.println("songFolder.isDirectory(): " + songFolder.isDirectory());
     if (songFolder.exists() && songFolder.isDirectory()) {
       File[] songList = songFolder.listFiles();
 
       if (songList != null) {
         for (File file : songList) {
-          if (file.isFile() && file.getName().endsWith(".mp3")) {
+          if (audioValidator.isSupported(file)) {
             return true;
           }
         }
@@ -274,12 +264,13 @@ public class MainGUIPanel extends JPanel {
     return false;
   }
 
-  public MainGUIPanel(JFrame parent) {
-    this.parent = parent;
-    setLayout(groupLay);
-    setOpaque(false);
+    public MainGUIPanel(AudioFormatValidator audioValidator) {
+        
+        this.audioValidator = audioValidator;
+        setLayout(groupLay);
+        setOpaque(false);
 
-    audioPlayer = new MusicPlayerFunction(this);
+        audioPlayer = new MusicPlayerFunction(this);
 
     // Song TimeStamp JLabel
     songTimeStamp = new JLabel("0:00:00");
@@ -311,9 +302,6 @@ public class MainGUIPanel extends JPanel {
           audioPlayer.setTempAudioPaused(audioPlayer.convertFrameToMilis(songSlider.getValue()));
           audioPlayer.pauseAudio();
           updatePlayBackSlider(songSlider.getValue());
-
-          System.out.println("ChangeAble Slider Value (Milisecond): " + songSlider.getValue());
-          System.out.println("Max Audio in frame                  : " + audioPlayer.getMp3file().getFrameCount());
         }
       }
     });
@@ -337,7 +325,6 @@ public class MainGUIPanel extends JPanel {
         // Stop current song and play next song
         audioPlayer.stopAudio();
         audioPlayer.playPreviousSong();
-        System.out.println("Play Prev Song ...");
 
         // Set SongSlider Max value and update End of the song Label
         updateAudioTotalLength();
@@ -369,7 +356,6 @@ public class MainGUIPanel extends JPanel {
         if (!audioPlayer.getIsAudioPaused()) {
           // Play Music
           audioPlayer.playNextSong();
-          System.out.println("PLAYING ...");
 
           // Set SongSlider Max value and update End of the song Label
           updateAudioTotalLength();
@@ -382,7 +368,6 @@ public class MainGUIPanel extends JPanel {
         else {
           // Resume Music
           audioPlayer.resumeAudio();
-          System.out.println("RESUMING ...");
         }
       } else {
         JOptionPane.showMessageDialog(
@@ -404,15 +389,12 @@ public class MainGUIPanel extends JPanel {
     pauseButton.setVisible(false);
     pauseButton.setEnabled(false);
     pauseButton.addActionListener(e -> {
-      System.out.println("audioPlayer.getSongFileName().isEmpty(): " + audioPlayer.getSongFileName().isEmpty());
-      System.out.println("isValidSongFolder(): " + isValidSongFolder());
       if (!getAbsoluteSongPath.isEmpty() && isValidSongFolder()) {
         // Enable PlayButton but disable PauseButton
         enablePlayButtonDisablePauseButton();
 
         // Pause the audio
         audioPlayer.pauseAudio();
-        System.out.println("PAUSING ...");
       } else {
         JOptionPane.showMessageDialog(
             this,
@@ -435,7 +417,6 @@ public class MainGUIPanel extends JPanel {
         // Stop current song and play next song
         audioPlayer.stopAudio();
         audioPlayer.playNextSong();
-        System.out.println("Play Next Song ...");
 
         // Set SongSlider Max value and update End of the song Label
         updateAudioTotalLength();
@@ -487,9 +468,6 @@ public class MainGUIPanel extends JPanel {
     addMouseListener(new MouseAdapter() {
       @Override
       public void mousePressed(MouseEvent e) {
-        // DEBUG
-        System.out.println(findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel));
-
         Component clickedComp = findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel);
         if (clickedComp != null && clickedComp.equals(draggablePanel)) {
           initialClick = e.getPoint();
@@ -502,8 +480,8 @@ public class MainGUIPanel extends JPanel {
         Component clickedComp = findComponentAt(MainGUIPanel.this, e.getPoint(), draggablePanel);
         if (clickedComp != null && clickedComp.equals(draggablePanel)) {
           // get location of Window (Frame)
-          int thisX = parent.getLocation().x;
-          int thisY = parent.getLocation().y;
+          JFrame pf = (JFrame)javax.swing.SwingUtilities.getWindowAncestor(MainGUIPanel.this); int thisX = pf.getLocation().x;
+          int thisY = pf.getLocation().y;
 
           // Determine how much the mouse moved since the initial click (Mouse)
           int xMoved = e.getX() - initialClick.x;
@@ -512,7 +490,7 @@ public class MainGUIPanel extends JPanel {
           // Move window to this position
           int targetX = thisX + xMoved;
           int targetY = thisY + yMoved;
-          parent.setLocation(targetX, targetY);
+          pf.setLocation(targetX, targetY);
         }
       }
     });
@@ -531,10 +509,8 @@ public class MainGUIPanel extends JPanel {
     String truncatedText = audioPlayer.getSongTitle();
 
     if (labelMetrics.stringWidth(audioPlayer.getSongTitle()) > maxWidth) {
-      // for(int i = 0; i < truncatedText.length() - 1; i++) {
       for (int i = truncatedText.length() - 1; i >= 0; i--) {
         truncatedText = audioPlayer.getSongTitle().substring(0, i) + "...";
-        System.out.println("Truncated Index: " + i);
         if (labelMetrics.stringWidth(truncatedText) <= maxWidth) {
           break;
         }
@@ -607,8 +583,34 @@ public class MainGUIPanel extends JPanel {
     songEnd.setText(audioPlayer.getAudioLengthAsString());
   }
 
-  // Setting a Custom Font
-  public Font setCustomFont(int size) {
-    return new Font(Font.SANS_SERIF, Font.BOLD, size);
-  }
+    // Setting a Custom Font
+    public Font setCustomFont(int size) {
+        return new Font(Font.SANS_SERIF, Font.BOLD, size);
+    }
+
+    // --- METHOD UNTUK TESTING ---
+    public void setAbsoluteSongPath(String path) {
+        this.getAbsoluteSongPath = path;
+    }
+
+    @Override
+    public void onPlaybackTimeUpdated(int currentTimeMilis) {
+        updatePlayBackSlider(audioPlayer.convertMilisToFrame(currentTimeMilis));
+    }
+
+    @Override
+    public void onSongFinished() {
+        // Automatically handled by audio stream timer playing next song
+    }
+
+    @Override
+    public void onSongChanged() {
+        updateAudioTotalLength();
+        updateMetadataLabel();
+    }
+
+    @Override
+    public void onError(String message, String title) {
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.WARNING_MESSAGE);
+    }
 }
